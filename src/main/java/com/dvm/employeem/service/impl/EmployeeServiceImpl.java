@@ -11,9 +11,12 @@ import com.dvm.employeem.service.DepartmentService;
 import com.dvm.employeem.service.EmployeeService;
 import com.dvm.employeem.service.RoleService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.ldap.core.AttributesMapper;
+import org.springframework.ldap.core.LdapTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -24,6 +27,7 @@ public class EmployeeServiceImpl implements EmployeeService {
     private final EmployeeRepository employeeRepository;
     private final RoleService roleService;
     private final DepartmentService departmentService;
+    private final LdapTemplate ldapTemplate;
 
     // Sử dụng ConcurrentHashMap để lưu trữ khóa TOTP
     private final ConcurrentHashMap<String, String> employeeOtpKeys = new ConcurrentHashMap<>();
@@ -69,5 +73,14 @@ public class EmployeeServiceImpl implements EmployeeService {
     @Override
     public String getSecretKeyForEmployee(String username) {
         return employeeOtpKeys.get(username);
+    }
+
+    @Override
+    public List<String> search(String username) {
+        return ldapTemplate.search(
+                "ou=people,dc=springframework,dc=org",
+                "(cn=" + username + ")",
+                (AttributesMapper<String>) attrs -> (String) attrs.get("cn").get()
+        );
     }
 }
